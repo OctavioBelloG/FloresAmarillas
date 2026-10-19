@@ -2,238 +2,1403 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Flores Amarillas</title>
-<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#05040a">
+<title>Flores Amarillas 🌻</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,400;1,9..144,600&family=Nunito:wght@400;600&display=swap">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400;1,500&family=Inter:wght@300;400&family=JetBrains+Mono:wght@400&display=swap">
 <style>
-/* Layout: full-screen night garden on canvas; message floats in the upper third. Single dark look by choice. */
+/* Experiencia 3D a pantalla completa: la escena WebGL vive detrás y el texto flota encima. Diseño oscuro a propósito. */
 :root{
-  --night:#07060d;
-  --night-2:#141029;
-  --petal:#ffd23f;
-  --petal-deep:#f4a300;
-  --ink:#fff6dc;
-  --ink-soft:#c9c0a6;
-  --display:"Fraunces", Georgia, "Times New Roman", serif;
-  --body:"Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --void:#05040a;
+  --f50:#fffbea;
+  --f100:#fff3c4;
+  --f200:#ffe985;
+  --f300:#ffd93d;
+  --display:"Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --body:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, monospace;
   color-scheme:dark;
 }
-html,body{height:100%}
-body{
-  background:radial-gradient(120% 80% at 50% 110%, var(--night-2), var(--night) 70%);
-  background-color:var(--night);
-  color:var(--ink);font-family:var(--body);overflow:hidden;
-  -webkit-tap-highlight-color:transparent;
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--void);color:var(--f100);font-family:var(--body);overflow:hidden;
+  -webkit-tap-highlight-color:transparent;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#gl.dragging{cursor:grabbing}
+.vignette{position:fixed;inset:0;pointer-events:none;z-index:5;
+  background:radial-gradient(ellipse at 50% 55%, transparent 52%, rgba(0,0,0,.6) 100%)}
+.display{font-family:var(--display);font-style:italic;font-weight:500}
+.glow{text-shadow:0 0 22px rgba(255,217,61,.35), 0 2px 18px rgba(0,0,0,.75)}
+p{margin:0}
+
+/* palabra por palabra, saliendo del desenfoque */
+.w{display:inline-block;opacity:0;filter:blur(10px);transform:translateY(12px);
+  animation:wIn 1.3s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes wIn{to{opacity:1;filter:blur(0);transform:none}}
+.out{transition:opacity 1.1s ease, filter 1.1s ease;opacity:0 !important;filter:blur(10px)}
+
+/* intro */
+#intro{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:0 max(24px, env(safe-area-inset-left,0px));text-align:center;transition:opacity 1.6s ease}
+#intro.gone{opacity:0;pointer-events:none}
+#introLine{min-height:9rem;max-width:48rem;display:flex;align-items:center;justify-content:center;
+  font-size:clamp(1.55rem,4.2vw,2.9rem);line-height:1.3;color:var(--f100)}
+.btnwrap{height:6rem;display:flex;align-items:center}
+.pill{position:relative;border-radius:999px;border:1px solid rgba(255,217,61,.4);background:rgba(255,217,61,.06);
+  padding:.9rem 2.2rem;color:var(--f100);font:300 .85rem/1 var(--body);text-transform:uppercase;letter-spacing:.32em;
+  cursor:pointer;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  transition:border-color .4s, background .4s, transform .3s}
+.pill::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background:rgba(255,217,61,.22);
+  filter:blur(18px);animation:flicker 3.2s ease-in-out infinite}
+.pill:hover{border-color:rgba(255,217,61,.8);background:rgba(255,217,61,.14);transform:scale(1.04)}
+.pill:active{transform:scale(.96)}
+.appear{animation:appear 1.8s cubic-bezier(.16,1,.3,1) both}
+@keyframes appear{from{opacity:0;transform:translateY(14px);filter:blur(10px)}to{opacity:1;transform:none;filter:none}}
+@keyframes flicker{0%,100%{opacity:1}50%{opacity:.7}}
+
+/* subtítulos de la historia */
+#sub{position:fixed;left:0;right:0;bottom:12%;z-index:20;display:flex;justify-content:center;pointer-events:none;
+  padding:0 24px;text-align:center}
+#sub .big{font-size:clamp(1.7rem,4.4vw,3.1rem);line-height:1.15;color:var(--f100)}
+#sub .soft{max-width:42rem;font-size:clamp(1.2rem,2.7vw,1.85rem);line-height:1.35;color:rgba(255,243,196,.92)}
+
+/* tarjeta de frase al tocar una flor */
+#cards{position:fixed;inset:0;z-index:30;pointer-events:none}
+.card{position:absolute;transform:translate(-50%,-100%);border-radius:1rem;border:1px solid rgba(255,217,61,.25);
+  background:rgba(5,4,10,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding:.9rem 1.25rem;text-align:center;font-size:clamp(1.08rem,3.6vw,1.25rem);line-height:1.35;color:var(--f100);
+  box-shadow:0 0 40px rgba(255,217,61,.18);animation:cardIn .9s cubic-bezier(.16,1,.3,1) both}
+.card.out{transition:opacity .8s, filter .8s, margin-top .8s;margin-top:-10px}
+@keyframes cardIn{from{opacity:0;margin-top:14px;filter:blur(8px);scale:.96}to{opacity:1;margin-top:0;filter:none;scale:1}}
+
+/* final */
+#final{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 9%);z-index:20;display:flex;justify-content:center;
+  padding:0 24px;pointer-events:none}
+#final .inner{position:relative;max-width:48rem;display:flex;flex-direction:column;align-items:center;gap:.7rem;text-align:center}
+#final .inner::before{content:"";position:absolute;inset:-2rem -2.5rem;z-index:-1;
+  background:radial-gradient(ellipse at center, rgba(20,8,14,.42), transparent 70%)}
+#finalLines p{font-size:clamp(1.15rem,2.9vw,1.9rem);line-height:1.35;color:var(--f50);transition:opacity 1.4s ease}
+#finalLines p+p{margin-top:.6rem}
+#finBtn{pointer-events:auto;margin-top:1rem;border:0;background:none;cursor:pointer;padding:.6rem 1.6rem;border-radius:999px;
+  font-size:clamp(1.6rem,4.6vw,3.2rem);line-height:1.15;color:var(--f200);animation:appear 1.8s cubic-bezier(.16,1,.3,1) both, breathe 4.2s ease-in-out 1.8s infinite;
+  transition:opacity 1.4s}
+#finBtn:active{scale:.97}
+#finBtn.hide{animation:none;opacity:0;pointer-events:none}
+@keyframes breathe{0%,100%{text-shadow:0 0 22px rgba(255,217,61,.35),0 2px 18px rgba(0,0,0,.7);transform:scale(1)}
+  50%{text-shadow:0 0 42px rgba(255,217,61,.7),0 2px 18px rgba(0,0,0,.7);transform:scale(1.015)}}
+#tocalo{font:400 10px var(--mono);text-transform:uppercase;letter-spacing:.3em;color:var(--f200);opacity:0;transition:opacity 1.6s}
+#tocalo.on{opacity:.55}
+#petalBtn{pointer-events:auto;margin-top:1.1rem;font-size:.75rem;padding:.8rem 1.8rem;transition:opacity 1.2s, border-color .4s, background .4s, transform .3s}
+#petalBtn.hide{animation:none;opacity:0;pointer-events:none}
+#petals{position:fixed;inset:0;width:100%;height:100%;z-index:25;pointer-events:none}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.dim{opacity:.5}
+
+/* HUD */
+#mute{position:fixed;right:max(16px, env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 16px);z-index:40;
+  border-radius:999px;border:1px solid rgba(255,233,133,.15);background:rgba(5,4,10,.3);padding:.6rem;line-height:0;
+  color:rgba(255,233,133,.6);cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:color .3s,border-color .3s}
+#mute:hover{color:var(--f100);border-color:rgba(255,233,133,.4)}
+#hud{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);z-index:20;display:flex;flex-direction:column;
+  align-items:center;gap:.75rem;pointer-events:none;padding:0 16px;text-align:center}
+#hint{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:max-content;max-width:calc(100% - 32px);padding:.75rem 1.4rem;text-align:center;
+  border-radius:1.5rem;border:1px solid rgba(255,217,61,.22);background:rgba(5,4,10,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  font:400 clamp(13px,2.2vw,16px)/1.6 var(--mono);text-transform:uppercase;letter-spacing:.22em;color:rgba(255,233,133,.95);
+  text-shadow:0 0 18px rgba(0,0,0,.9), 0 0 6px rgba(0,0,0,.8);opacity:0;transition:opacity 1.2s}
+#hint.on{opacity:1}
+#dots{display:flex;gap:.5rem;opacity:0;transition:opacity 1.2s}
+#dots.on{opacity:1}
+#dots i{width:6px;height:6px;border-radius:50%;background:var(--f300);opacity:.28;transform:scale(.7);transition:all .6s cubic-bezier(.16,1,.3,1)}
+#dots i.found{opacity:1;transform:scale(1);box-shadow:0 0 10px 2px rgba(255,217,61,.7)}
+#err{position:fixed;left:0;right:0;bottom:40px;z-index:50;padding:0 32px;text-align:center;font:400 12px/1.6 var(--mono);color:rgba(255,233,133,.7)}
+[hidden]{display:none !important}
+
+@media (prefers-reduced-motion:reduce){
+  .w{animation-duration:.4s;filter:none;transform:none}
+  #finBtn{animation:appear .6s both}
 }
-canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
-.msg{
-  position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 9vh);
-  padding-left:max(16px, env(safe-area-inset-left,0px));
-  padding-right:max(16px, env(safe-area-inset-right,0px));
-  text-align:center;pointer-events:none;z-index:2;
-  display:flex;flex-direction:column;align-items:center;gap:.6rem;
-}
-.eyebrow{font-size:.75rem;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-soft);
-  animation:rise 1.6s ease-out .3s both}
-h1{margin:0;font-family:var(--display);font-style:italic;font-weight:600;
-  font-size:clamp(2.2rem,8vw,4.2rem);line-height:1.05;text-wrap:balance;
-  color:var(--petal);text-shadow:0 0 28px rgba(255,210,63,.35);
-  animation:rise 1.8s ease-out .8s both}
-p{margin:0;max-width:30ch;font-size:clamp(1rem,3.6vw,1.15rem);line-height:1.55;color:var(--ink);
-  text-wrap:balance;animation:rise 1.8s ease-out 1.6s both}
-.hint{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);
-  text-align:center;font-size:.8rem;color:var(--ink-soft);opacity:.75;z-index:2;pointer-events:none;
-  animation:rise 1.5s ease-out 4s both}
-@keyframes rise{from{opacity:.0;transform:translateY(8px)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){.eyebrow,h1,p,.hint{animation:none}}
 </style>
 </head>
 <body>
 
-<canvas id="garden" aria-label="Flores amarillas creciendo de noche"></canvas>
-<div class="msg">
-  <div class="eyebrow">Un detalle con cariño</div>
-  <h1 id="title">Para ti, amiga</h1>
-  <p>Unas flores amarillas para que tu día brille un poquito más. Gracias por ser tan buena amiga.</p>
+<canvas id="gl" aria-label="Un jardín de girasoles en 3D"></canvas>
+<div class="vignette"></div>
+
+<div id="intro">
+  <div id="introLine" class="display glow" aria-live="polite"></div>
+  <div class="btnwrap"><button id="go" class="pill appear" hidden>Descubrir 🌻</button></div>
 </div>
-<div class="hint">Toca la pantalla para plantar más flores</div>
+
+<div id="sub" aria-live="polite"></div>
+<div id="cards" aria-live="polite"></div>
+
+<div id="final">
+  <div class="inner">
+    <div id="finalLines" class="display glow"></div>
+    <button id="finBtn" class="display" hidden></button>
+    <span id="tocalo" aria-hidden="true">tócalo</span>
+    <button id="petalBtn" class="pill appear" hidden></button>
+  </div>
+</div>
+<canvas id="petals" aria-hidden="true"></canvas>
+<p id="petalMsg" class="sr-only" aria-live="polite"></p>
+
+<button id="mute" hidden aria-label="Silenciar">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M11 5 6 9H3v6h3l5 4V5z"/>
+    <g id="icOn"><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></g>
+    <g id="icOff" style="display:none"><path d="m16 9 5 6"/><path d="m21 9-5 6"/></g>
+  </svg>
+</button>
+
+<div id="hud">
+  <p id="hint"></p>
+  <div id="dots" role="img"></div>
+</div>
+
+<div id="err" hidden>Tu navegador no pudo iniciar los gráficos 3D. Prueba con Chrome, Edge, Safari o Firefox actualizados 🌼</div>
 
 <script>
-(() => {
-  // Optional name from the link: …/artifact/xyz#Mariana
-  try {
-    const n = decodeURIComponent(location.hash.slice(1)).replace(/[_-]+/g, " ").trim();
-    if (n) document.getElementById("title").textContent = "Para Perla Yami ";
-  } catch (e) {}
+  // Si el módulo 3D no llega a arrancar (sin internet, navegador viejo), avisamos en lugar de dejar la pantalla negra.
+  setTimeout(() => { if (!window.__floresOK) document.getElementById("err").hidden = false; }, 9000);
+</script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from "three";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 
-  const cv = document.getElementById("garden");
-  const ctx = cv.getContext("2d");
-  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let W, H, dpr;
-  const flowers = [], flies = [], stars = [];
+/* ───────────── Textos (edítalos a tu gusto) ───────────── */
+const CONFIG = {
+  nombre: "Perla Yami",
+  intro: [
+    "Dicen que hoy se regalan flores amarillas…",
+    "…pero sé que tu flor favorita es el girasol",
+    "Y unos girasoles normales me parecieron demasiado fácil",
+    "Así que preferí programarlos para ti, {nombre}"
+  ],
+  unaFlor: "Un girasol sería demasiado poco…",
+  frases: [
+    "La primera inició con una pequeña luz",
+    "Esta floreció porque pensé en ti",
+    "Esta porque me encanta verte sonreír",
+    "Esta porque una sola nunca sería suficiente",
+    "Y esta simplemente para recordarte lo especial que eres",
+    "Esta no tiene motivo. Existe porque tú existes",
+    "Esta es para los días difíciles: que recuerdes que alguien piensa en ti",
+    "Esta por el alma de zanahoria",
+    "Esta por los entrenamientos de Tae",
+    "Esta por la primera vez que comimos comida china, estaba buena ^^",
+    "Esta no, esta guárdamela XD",
+    "Esta para que recapacites del BL",
+    "Esta es por esos ojos oscuros",
+    "Esta es porque admiro tu dedicación en los estudios y en tus proyectos personales",
+    "Esta simplemente por ser tú"
+  ],
+  // frases que salen una sola vez (no se repiten al seguir tocando girasoles)
+  soloUnaVez: ["Esta no, esta guárdamela XD"],
+  // esta frase solo la dice el girasol naranja escondido en el jardín
+  zanahoria: "Esta por el alma de zanahoria",
+  // y esta solo la dice el girasol principal (el primero que nace)
+  primera: "La primera inició con una pequeña luz",
+  cielo: "Hasta el código puede mostrar lo que cuesta decir",
+  finales: [
+    "Podría haberte regalado un ramo de girasoles…",
+    "…pero quería regalarte algo que tuviera un poquito de mí",
+    "Así que convertí líneas de código…",
+    "…en un jardín de girasoles para ti, {nombre}"
+  ],
+  boton: "Felices flores amarillas ^^ 🌻💛",
+  botonPetalos: "Una última cosa… 🌻",
+  mensajePetalos: "Para ti Yami ^^",
+  pista: "Toca los girasoles · Arrastra para mirar alrededor"
+};
 
-  function resize() {
-    dpr = Math.min(devicePixelRatio || 1, 2);
+// Nombre opcional desde el enlace: ?para=Mariana  o  #Mariana
+const qs = new URLSearchParams(location.search);
+let NOMBRE = CONFIG.nombre;
+try {
+  const n = (qs.get("para") || decodeURIComponent(location.hash.slice(1))).replace(/[_-]+/g, " ").trim();
+  if (n) NOMBRE = n;
+} catch (e) {}
+const fill = s => s.replace("{nombre}", NOMBRE);
+
+/* ───────────── Calidad según el dispositivo ───────────── */
+const REDUCE = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const TIERS = {
+  low:    { dpr: 1.25, flowers: 170, segU: 4, grass: 4500, particles: 2500, fireflies: 90,  stars: 900,  bloom: .6 },
+  medium: { dpr: 1.6,  flowers: 320, segU: 5, grass: 11000, particles: 5000, fireflies: 160, stars: 1400, bloom: .6 },
+  high:   { dpr: 2,    flowers: 480, segU: 6, grass: 20000, particles: 8000, fireflies: 240, stars: 2000, bloom: .6 }
+};
+function pickTier() {
+  const c = navigator.hardwareConcurrency || 4, m = navigator.deviceMemory || 4;
+  const mobile = matchMedia("(pointer: coarse)").matches || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+  if (mobile) return c >= 8 && m >= 6 ? "medium" : "low";
+  if (c >= 8 && m >= 8) return "high";
+  return c <= 4 || m <= 2 ? "low" : "medium";
+}
+const T = TIERS[qs.get("calidad")] || TIERS[pickTier()];
+const SPEED = (() => { const s = Number(qs.get("speed")); return s > 0 && s <= 3 ? s : REDUCE ? .75 : 1; })();
+
+/* ───────────── Utilidades ───────────── */
+const $ = id => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const E = {
+  linear: t => t,
+  inOutSine: t => -(Math.cos(Math.PI * t) - 1) / 2,
+  outCubic: t => 1 - Math.pow(1 - t, 3),
+  inOutCubic: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+};
+function mulberry(seed) {
+  let a = seed >>> 0;
+  return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+const rand = mulberry(20261019);
+const rr = (a, b) => a + (b - a) * rand();
+const col = hex => new THREE.Color(hex);
+
+/* ───────────── Reloj propio: la historia se pausa si la pestaña se oculta ───────────── */
+let clock = 0;
+const tasks = new Set();
+function anim(ms, fn, ease = E.inOutSine) {
+  ms *= SPEED;
+  return new Promise(res => {
+    const t0 = clock;
+    tasks.add({ step() { const p = ms <= 0 ? 1 : clamp((clock - t0) / ms); fn(ease(p)); if (p >= 1) { res(); return true; } } });
+  });
+}
+function tween(obj, key, to, ms, ease) { const from = obj[key]; return anim(ms, k => obj[key] = from + (to - from) * k, ease); }
+const wait = ms => anim(ms, () => {});
+
+/* ───────────── Audio ambiental (Web Audio, sin archivos) ───────────── */
+class Sound {
+  constructor() { this.ctx = null; this.muted = false; }
+  start() {
+    if (this.ctx) { this.ctx.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    const ctx = this.ctx = new AC();
+    this.master = ctx.createGain(); this.master.gain.value = 0; this.master.connect(ctx.destination);
+    const verb = ctx.createConvolver(); verb.buffer = this.impulse(3.2, 2.6);
+    this.send = ctx.createGain(); this.send.gain.value = .55; this.send.connect(verb);
+    const wet = ctx.createGain(); wet.gain.value = .9; verb.connect(wet).connect(this.master);
+    // pad cálido
+    this.padFilter = ctx.createBiquadFilter(); this.padFilter.type = "lowpass"; this.padFilter.frequency.value = 500; this.padFilter.Q.value = .6;
+    this.padGain = ctx.createGain(); this.padGain.gain.value = 0;
+    this.padFilter.connect(this.padGain); this.padGain.connect(this.master); this.padGain.connect(this.send);
+    this.padGain.gain.setTargetAtTime(.5, ctx.currentTime, 4);
+    for (const f of [146.83, 220, 277.18, 369.99, 659.25]) for (const d of [-7, 6]) {
+      const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = f; o.detune.value = d;
+      const g = ctx.createGain(); g.gain.value = .018; o.connect(g).connect(this.padFilter); o.start();
+    }
+    const lfo = ctx.createOscillator(); lfo.frequency.value = .07;
+    const lg = ctx.createGain(); lg.gain.value = 220; lfo.connect(lg).connect(this.padFilter.frequency); lfo.start();
+    // viento
+    const len = ctx.sampleRate * 4, buf = ctx.createBuffer(1, len, ctx.sampleRate), ch = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < len; i++) { last = (last + .02 * (Math.random() * 2 - 1)) / 1.02; ch[i] = last * 3.5; }
+    const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+    const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 520; bp.Q.value = .5;
+    this.wind = ctx.createGain(); this.wind.gain.value = .05;
+    src.connect(bp).connect(this.wind).connect(this.master); src.start();
+    ctx.resume();
+    this.master.gain.setTargetAtTime(this.muted ? 0 : .6, ctx.currentTime, 2.2);
+    document.addEventListener("visibilitychange", () => document.hidden ? ctx.suspend() : ctx.resume());
+  }
+  impulse(sec, decay) {
+    const ctx = this.ctx, n = Math.floor(ctx.sampleRate * sec), b = ctx.createBuffer(2, n, ctx.sampleRate);
+    for (let c = 0; c < 2; c++) { const d = b.getChannelData(c); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, decay); }
+    return b;
+  }
+  setMuted(m) { this.muted = m; if (this.ctx) this.master.gain.setTargetAtTime(m ? 0 : .6, this.ctx.currentTime, .25); }
+  mood(name) {
+    if (!this.ctx) return;
+    const m = { birth: [520, .5, .05], garden: [900, .6, .09], sky: [1500, .55, .03], sunset: [1100, .68, .06], finale: [2000, .75, .05] }[name];
+    const t = this.ctx.currentTime;
+    this.padFilter.frequency.setTargetAtTime(m[0], t, 2.5); this.padGain.gain.setTargetAtTime(m[1], t, 3); this.wind.gain.setTargetAtTime(m[2], t, 3);
+  }
+  chime(note, gain = .16) {
+    if (!this.ctx || this.muted) return;
+    const ctx = this.ctx, t = ctx.currentTime, f = 587.33 * Math.pow(2, note / 12);
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(gain, t + .006); env.gain.exponentialRampToValueAtTime(1e-4, t + 2.4);
+    env.connect(this.master); env.connect(this.send);
+    for (const [mul, amp] of [[1, 1], [2.01, .28], [3.99, .1]]) {
+      const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = f * mul;
+      const g = ctx.createGain(); g.gain.value = amp; o.connect(g).connect(env); o.start(t); o.stop(t + 2.5);
+    }
+  }
+  gust() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this.wind.gain.setTargetAtTime(.3, t, .35);
+    this.wind.gain.setTargetAtTime(.06, t + 2.4, 1.2);
+  }
+  arpeggio() { [0, 4, 7, 9, 12, 16, 19, 21, 24].forEach((n, i) => setTimeout(() => this.chime(n - 12, .14), i * 170)); }
+  shimmer() { [24, 28, 31, 33].forEach((n, i) => setTimeout(() => this.chime(n, .06), i * 260)); }
+}
+const sound = new Sound();
+
+/* ───────────── Renderer ───────────── */
+const canvas = $("gl");
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance" });
+} catch (e) {
+  $("err").hidden = false; throw e;
+}
+window.__floresOK = true;
+const DPR = Math.min(devicePixelRatio || 1, T.dpr);
+renderer.setPixelRatio(DPR);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(46, innerWidth / innerHeight, .1, 700);
+
+const U = {
+  uTime: { value: 0 }, uHero: { value: 0 }, uGarden: { value: 0 }, uMaxDist: { value: 20 },
+  uSunset: { value: 0 }, uSeed: { value: 0 }, uStars: { value: 0 }, uWind: { value: REDUCE ? .4 : 1 },
+  uPulseR: { value: -100 }, uPulseAmt: { value: 0 },
+  uFogColor: { value: col(0x12102a) }, uFogNear: { value: 9 }, uFogFar: { value: 62 },
+  uTint: { value: new THREE.Vector3(1, 1, 1) }, uScale: { value: 500 }, uDpr: { value: DPR }
+};
+
+const COMMON = /* glsl */`
+uniform float uTime, uHero, uGarden, uMaxDist, uSunset, uSeed, uWind, uPulseR, uPulseAmt, uFogNear, uFogFar, uScale, uDpr, uStars;
+uniform vec3 uFogColor, uTint;
+float eo(float x){ x = clamp(x,0.,1.); return 1. - pow(1. - x, 3.); }
+float frontGrow(float dist, float span){ return clamp((uGarden*(uMaxDist + 7.) - dist - 1.)/span, 0., 1.); }
+float growFor(float dist, float hero){ return hero > .5 ? uHero : frontGrow(dist, 6.); }
+vec2 swayAt(float ph, float h){
+  return vec2(sin(uTime*.8 + ph) + .35*sin(uTime*1.9 + ph*2.1), .5*cos(uTime*.63 + ph*1.3)) * .05 * h * uWind;
+}
+vec3 rotY(vec3 p, float a){ float c = cos(a), s = sin(a); return vec3(c*p.x + s*p.z, p.y, -s*p.x + c*p.z); }
+vec3 rotX(vec3 p, float a){ float c = cos(a), s = sin(a); return vec3(p.x, c*p.y - s*p.z, s*p.y + c*p.z); }
+float fogOf(vec4 mv){ return smoothstep(uFogNear, uFogFar, length(mv.xyz)); }
+`;
+
+const shader = (vertex, fragment, extra = {}, opts = {}) => new THREE.ShaderMaterial({
+  uniforms: { ...U, ...extra }, vertexShader: COMMON + vertex, fragmentShader: COMMON + fragment, ...opts
+});
+
+/* ───────────── Cielo, luna y estrellas ───────────── */
+const sky = new THREE.Mesh(new THREE.SphereGeometry(400, 32, 16), shader(`
+  varying vec3 vDir;
+  void main(){ vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }
+`, `
+  varying vec3 vDir;
+  uniform vec3 nTop, nHor, sTop, sMid, sHor, sunC;
+  void main(){
+    vec3 d = normalize(vDir); float h = d.y;
+    vec3 night = mix(nHor, nTop, smoothstep(-.02, .45, h));
+    vec3 dusk = mix(sHor, sMid, smoothstep(-.02, .2, h)); dusk = mix(dusk, sTop, smoothstep(.15, .65, h));
+    vec3 c = mix(night, dusk, uSunset);
+    float sd = max(dot(d, normalize(vec3(0., .035, -1.))), 0.);
+    c += sunC * (pow(sd, 600.)*.9 + pow(sd, 18.)*.22) * uSunset;
+    vec3 md = normalize(vec3(-.52, .24, -.82)); float m = dot(d, md);
+    c += vec3(1., .95, .82) * (smoothstep(.99962, .9998, m)*1.15 + pow(max(m, 0.), 400.)*.05) * (1. - uSunset*.85);
+    c = mix(c, uFogColor, smoothstep(.0, -.08, h));
+    gl_FragColor = vec4(c, 1.);
+  }
+`, {
+  nTop: { value: col(0x020208) }, nHor: { value: col(0x18132f) },
+  sTop: { value: col(0x1a1236) }, sMid: { value: col(0x7a3456) }, sHor: { value: col(0xff8a3d) }, sunC: { value: col(0xffc46b) }
+}, { side: THREE.BackSide, depthWrite: false }));
+sky.renderOrder = -2;
+sky.frustumCulled = false;
+scene.add(sky);
+
+const starsGroup = new THREE.Group();
+scene.add(starsGroup);
+{
+  const n = T.stars, p = new Float32Array(n * 3), a = new Float32Array(n * 2);
+  for (let i = 0; i < n; i++) {
+    const th = rand() * Math.PI * 2, y = Math.pow(rand(), .8) * .98 + .02, r = Math.sqrt(1 - y * y);
+    p.set([Math.cos(th) * r * 380, y * 380, Math.sin(th) * r * 380], i * 3);
+    a.set([rand(), rr(.8, 2.4) * (rand() < .06 ? 1.8 : 1)], i * 2);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(p, 3));
+  g.setAttribute("aStar", new THREE.BufferAttribute(a, 2));
+  const pts = new THREE.Points(g, shader(`
+    attribute vec2 aStar; varying float vA;
+    void main(){
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.);
+      float tw = .55 + .45*sin(uTime*(.6 + aStar.x*1.8) + aStar.x*60.);
+      vA = tw * (.35 + .65*uStars) * (1. - uSunset*.7) * smoothstep(.0, .12, normalize(position).y);
+      gl_PointSize = aStar.y * uDpr;
+    }
+  `, `
+    varying float vA;
+    void main(){ float d = length(gl_PointCoord - .5)*2.; float a = smoothstep(1., .0, d) * vA; gl_FragColor = vec4(vec3(1., .96, .86)*a, a); }
+  `, {}, { transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  pts.frustumCulled = false;
+  starsGroup.add(pts);
+}
+
+/* ───────────── Suelo ───────────── */
+{
+  const g = new THREE.CircleGeometry(160, 64); g.rotateX(-Math.PI / 2);
+  const m = new THREE.Mesh(g, shader(`
+    varying vec3 vW; varying float vFog;
+    void main(){ vec4 w = modelMatrix * vec4(position, 1.); vW = w.xyz; vec4 mv = viewMatrix * w; vFog = fogOf(mv); gl_Position = projectionMatrix * mv; }
+  `, `
+    varying vec3 vW; varying float vFog;
+    uniform vec3 g1, g2, glowC;
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7)))*43758.5453); }
+    float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3. - 2.*f);
+      return mix(mix(hash(i), hash(i + vec2(1,0)), f.x), mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x), f.y); }
+    void main(){
+      float n = noise(vW.xz*.35)*.6 + noise(vW.xz*1.7)*.4;
+      vec3 c = mix(g1, g2, n) * uTint;
+      float r = length(vW.xz);
+      c += glowC * uSeed * exp(-r*r*1.4) * .9;
+      c = mix(c, uFogColor, vFog);
+      gl_FragColor = vec4(c, 1.);
+    }
+  `, { g1: { value: col(0x040a05) }, g2: { value: col(0x0c1a0d) }, glowC: { value: col(0xffc93d) } }));
+  m.renderOrder = -1;
+  scene.add(m);
+}
+
+/* ───────────── Flores ───────────── */
+const N = T.flowers;
+const F = { x: [], z: [], dist: [], hero: [], h: [], head: [], bx: [], bz: [], tilt: [], yaw: [], phase: [] };
+function addFlower(o) { for (const k in F) F[k].push(o[k]); }
+addFlower({ x: 0, z: 0, dist: 0, hero: 1, h: 2.05, head: .5, bx: .04, bz: -.03, tilt: 1.05, yaw: 0, phase: 0 });
+{
+  const cell = .78, grid = new Map(), key = (x, z) => Math.round(x / cell) + "," + Math.round(z / cell);
+  grid.set(key(0, 0), 1);
+  let tries = 0;
+  const R = 13 + N * .025;
+  while (F.x.length < N && tries++ < N * 40) {
+    const r = 1.1 + Math.pow(rand(), .8) * R, a = rand() * Math.PI * 2;
+    const x = Math.cos(a) * r * 1.3, z = Math.sin(a) * r * .95 - 2.5;
+    if (z > 9.5 || Math.hypot(x, z) < 1.1) continue;
+    const k = key(x, z);
+    if (grid.has(k)) continue;
+    grid.set(k, 1);
+    const near = Math.hypot(x, z - 3) < 6;
+    addFlower({
+      x, z, dist: Math.hypot(x, z), hero: 0,
+      h: rr(.75, 1.9) * (near ? .8 : 1), head: rr(.24, .36), bx: rr(-.1, .1), bz: rr(-.1, .1),
+      tilt: rr(.8, 1.2), yaw: Math.atan2(0 - x, 17 - z) + rr(-.45, .45), phase: rr(0, 6.283)
+    });
+  }
+  U.uMaxDist.value = Math.max(...F.dist);
+}
+const COUNT = F.x.length;
+let CARROT = 1;
+{
+  let bestD = 1e9;
+  for (let i = 1; i < COUNT; i++) {
+    const d = Math.hypot(F.x[i] - 2.4, F.z[i] - 1.2);
+    if (d < bestD) { bestD = d; CARROT = i; }
+  }
+}
+const glow = new Float32Array(COUNT);
+const iPos = new Float32Array(COUNT * 4), iShape = new Float32Array(COUNT * 4), iMisc = new Float32Array(COUNT * 4);
+for (let i = 0; i < COUNT; i++) {
+  iPos.set([F.x[i], F.z[i], F.dist[i], F.hero[i]], i * 4);
+  iShape.set([F.h[i], F.head[i], F.bx[i], F.bz[i]], i * 4);
+  iMisc.set([F.phase[i], F.tilt[i], F.yaw[i], i === CARROT ? -5 : rr(-1, 1)], i * 4);
+}
+const A = {
+  iPos: new THREE.InstancedBufferAttribute(iPos, 4), iShape: new THREE.InstancedBufferAttribute(iShape, 4),
+  iMisc: new THREE.InstancedBufferAttribute(iMisc, 4), iGlow: new THREE.InstancedBufferAttribute(glow, 1)
+};
+A.iGlow.setUsage(THREE.DynamicDrawUsage);
+function instanced(base) {
+  const g = new THREE.InstancedBufferGeometry();
+  g.index = base.index;
+  for (const k in base.attributes) g.setAttribute(k, base.attributes[k]);
+  for (const k in A) g.setAttribute(k, A[k]);
+  g.instanceCount = COUNT;
+  return g;
+}
+const FLOWER_ATTR = `attribute vec4 iPos; attribute vec4 iShape; attribute vec4 iMisc; attribute float iGlow;`;
+
+// tallo
+{
+  const base = new THREE.CylinderGeometry(1, 1, 1, 5, 8, true); base.translate(0, .5, 0);
+  const m = new THREE.Mesh(instanced(base), shader(FLOWER_ATTR + `
+    varying float vY; varying float vFog; varying float vSide;
+    void main(){
+      float g = growFor(iPos.z, iPos.w);
+      float st = eo(g/.65);
+      float h = iShape.x*st, y = position.y;
+      float rad = iShape.y*.095*(.5 + .5*st)*(1. - .35*y);
+      vec2 off = (iShape.zw*h + swayAt(iMisc.x, h))*y*y;
+      vec3 p = vec3(iPos.x + position.x*rad + off.x, y*h, iPos.y + position.z*rad + off.y);
+      vY = y; vSide = position.x;
+      vec4 mv = modelViewMatrix * vec4(p, 1.); vFog = fogOf(mv); gl_Position = projectionMatrix * mv;
+    }
+  `, `
+    varying float vY; varying float vFog; varying float vSide;
+    uniform vec3 c1, c2;
+    void main(){ vec3 c = mix(c1, c2, vY) * (.75 + .25*vSide) * uTint; gl_FragColor = vec4(mix(c, uFogColor, vFog), 1.); }
+  `, { c1: { value: col(0x1a4216) }, c2: { value: col(0x4f9434) } }));
+  m.frustumCulled = false; scene.add(m);
+}
+
+// hojas (dos por flor)
+{
+  const pos = [], leaf = [], idx = [];
+  const seg = 5;
+  for (let w = 0; w < 2; w++) {
+    const b = pos.length / 3;
+    for (let i = 0; i <= seg; i++) for (let j = 0; j < 3; j++) { pos.push(0, 0, 0); leaf.push(i / seg, j - 1, w); }
+    for (let i = 0; i < seg; i++) for (let j = 0; j < 2; j++) { const a = b + i * 3 + j; idx.push(a, a + 3, a + 1, a + 1, a + 3, a + 4); }
+  }
+  const base = new THREE.BufferGeometry();
+  base.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  base.setAttribute("aLeaf", new THREE.Float32BufferAttribute(leaf, 3));
+  base.setIndex(idx);
+  const m = new THREE.Mesh(instanced(base), shader(FLOWER_ATTR + `
+    attribute vec3 aLeaf; varying vec2 vL; varying float vFog;
+    void main(){
+      float g = growFor(iPos.z, iPos.w);
+      float st = eo(g/.65);
+      float which = aLeaf.z;
+      float y01 = mix(.28, .5, which);
+      float h = iShape.x*st;
+      vec2 off = (iShape.zw*h + swayAt(iMisc.x, h))*y01*y01;
+      vec3 base = vec3(iPos.x + off.x, y01*h, iPos.y + off.y);
+      float L = iShape.y*mix(2.2, 1.7, which)*smoothstep(.35, .85, st) * (iPos.w > .5 ? .85 : 1.);
+      float u = aLeaf.x, v = aLeaf.y;
+      float w = pow(sin(3.14159*pow(u, .8)), .7)*.3*L;
+      vec3 lp = vec3(u*L, (u*.6 - u*u*.75)*L, v*w);
+      lp.y += abs(v)*w*.35;
+      lp = rotY(lp, iMisc.x*3.1 + which*3.6 + sin(uTime*.9 + iMisc.x)*.08*uWind);
+      vL = vec2(u, v);
+      vec4 mv = modelViewMatrix * vec4(base + lp, 1.); vFog = fogOf(mv); gl_Position = projectionMatrix * mv;
+    }
+  `, `
+    varying vec2 vL; varying float vFog;
+    uniform vec3 c1, c2;
+    void main(){ vec3 c = mix(c1, c2, vL.x*.8 + .2) * (.7 + .3*(1. - abs(vL.y))) * uTint; gl_FragColor = vec4(mix(c, uFogColor, vFog), 1.); }
+  `, { c1: { value: col(0x1d4a18) }, c2: { value: col(0x5a9c38) } }, { side: THREE.DoubleSide }));
+  m.frustumCulled = false; scene.add(m);
+}
+
+// cabeza de girasol: dos coronas de pétalos delgados + disco de semillas
+{
+  const pos = [], pet = [], idx = [];
+  const segU = T.segU;
+  for (const [n, layer, off] of [[22, 0, 0], [20, 1, Math.PI / 20]]) {
+    for (let p = 0; p < n; p++) {
+      const a = off + p / n * Math.PI * 2, b = pos.length / 3;
+      for (let i = 0; i <= segU; i++) for (let j = 0; j < 3; j++) { pos.push(0, 0, 0); pet.push(a, i / segU, j - 1, layer); }
+      for (let i = 0; i < segU; i++) for (let j = 0; j < 2; j++) { const q = b + i * 3 + j; idx.push(q, q + 3, q + 1, q + 1, q + 3, q + 4); }
+    }
+  }
+  const dome = new THREE.SphereGeometry(1, 20, 6, 0, Math.PI * 2, 0, Math.PI / 2);
+  const b = pos.length / 3, dp = dome.attributes.position;
+  for (let k = 0; k < dp.count; k++) { pos.push(dp.getX(k) * .42, dp.getY(k) * .1 + .02, dp.getZ(k) * .42); pet.push(0, 0, 0, 2); }
+  for (const k of dome.index.array) idx.push(b + k);
+  const base = new THREE.BufferGeometry();
+  base.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  base.setAttribute("aPetal", new THREE.Float32BufferAttribute(pet, 4));
+  base.setIndex(idx);
+  const m = new THREE.Mesh(instanced(base), shader(FLOWER_ATTR + `
+    attribute vec4 aPetal;
+    varying vec3 vData; varying vec3 vLocal; varying float vFog; varying float vGlow; varying float vHue; varying float vShade;
+    void main(){
+      float g = growFor(iPos.z, iPos.w);
+      float st = eo(g/.65);
+      float bl = clamp((g - .5)/.5, 0., 1.), be = eo(bl);
+      float h = iShape.x*st;
+      vec2 off = iShape.zw*h + swayAt(iMisc.x, h);
+      vec3 top = vec3(iPos.x + off.x, h, iPos.y + off.y);
+      vec3 lp;
+      float layer = aPetal.w;
+      if (layer < 1.5) {
+        float u = aPetal.y, v = aPetal.z;
+        float L = mix(.95, .82, layer) * (1. + .06*sin(aPetal.x*7.3 + iMisc.x));
+        float e = mix(1.45, mix(-.04, .16, layer), be) + u*mix(.2, .1, layer)*be;
+        float wd = pow(sin(3.14159*pow(u, .7)), .75) * mix(.15, .14, layer) * (.55 + .45*be);
+        float r = .36 + u*L*cos(e);
+        float y = u*L*sin(e) + v*v*.035*be + layer*.03 - u*u*.1*be*(1. - layer);
+        float a = aPetal.x;
+        lp = vec3(cos(a)*r - sin(a)*v*wd, y, sin(a)*r + cos(a)*v*wd);
+        vShade = sin(e);
+      } else {
+        lp = position * (.6 + .4*be);
+        vShade = 1.;
+      }
+      vLocal = lp;
+      lp *= iShape.y * (.18 + .82*be) * step(.0005, bl);
+      lp = rotY(lp, iMisc.x*2.);
+      lp = rotX(lp, iMisc.y*be + .1*sin(uTime*.8 + iMisc.x)*uWind);
+      lp = rotY(lp, iMisc.z);
+      vData = vec3(aPetal.y, aPetal.z, layer);
+      float pulse = uPulseAmt * exp(-pow((iPos.z - uPulseR)/1.8, 2.));
+      vGlow = iGlow + pulse + (iPos.w > .5 ? uSeed*.35 : 0.);
+      vHue = iMisc.w;
+      vec4 mv = modelViewMatrix * vec4(top + lp, 1.); vFog = fogOf(mv); gl_Position = projectionMatrix * mv;
+    }
+  `, `
+    varying vec3 vData; varying vec3 vLocal; varying float vFog; varying float vGlow; varying float vHue; varying float vShade;
+    uniform vec3 deep, bright, cen1, cen2, rim;
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1)))*45758.5453); }
+    void main(){
+      vec3 c;
+      if (vData.z > 1.5) {
+        float r = length(vLocal.xz) / .42, a = atan(vLocal.z, vLocal.x);
+        float seeds = sin(13.*a + 34.*r) * sin(21.*a - 34.*r);
+        c = mix(cen1, cen2, smoothstep(.1, .9, seeds) * .8);
+        c = mix(c, rim, smoothstep(.72, .98, r) * .85);
+        c = mix(c, cen1 * .6, smoothstep(.22, .0, r) * .7);
+      } else {
+        float u = vData.x;
+        c = mix(deep, bright, smoothstep(.0, .55, u));
+        if (vHue < -2.) c *= vec3(1., .48, .3);    // girasol zanahoria: naranja, mismo tamaño y brillo
+        else c.g *= 1. + vHue*.06;
+        c *= .72 + .28*(1. - abs(vData.y));
+        c *= mix(1., .82, vData.z);
+        c *= .85 + .3*(1. - vShade*.5);
+      }
+      c *= uTint;
+      c += bright * vGlow * 1.3;
+      gl_FragColor = vec4(mix(c, uFogColor, vFog), 1.);
+    }
+  `, {
+    deep: { value: col(0xe88a00) }, bright: { value: col(0xffcc1a) },
+    cen1: { value: col(0x1e0f04) }, cen2: { value: col(0x5c3410) }, rim: { value: col(0x9a5410) }
+  }, { side: THREE.DoubleSide }));
+  m.frustumCulled = false; scene.add(m);
+}
+
+/* ───────────── Pasto ───────────── */
+{
+  const n = T.grass;
+  const base = new THREE.PlaneGeometry(1, 1, 1, 4); base.translate(0, .5, 0);
+  const b1 = new Float32Array(n * 4), b2 = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const r = Math.pow(rand(), .7) * 30, a = rand() * Math.PI * 2;
+    const x = Math.cos(a) * r * 1.3, z = Math.min(Math.sin(a) * r * .95 - 2.5, 11.5);
+    b1.set([x, z, rr(.16, .5) * (r < 12 ? 1.1 : 1), rand() * Math.PI], i * 4);
+    b2.set([rand() * 6.28, Math.hypot(x, z), rr(.6, 1.15)], i * 3);
+  }
+  const g = new THREE.InstancedBufferGeometry();
+  g.index = base.index; g.setAttribute("position", base.attributes.position);
+  g.setAttribute("iB", new THREE.InstancedBufferAttribute(b1, 4));
+  g.setAttribute("iB2", new THREE.InstancedBufferAttribute(b2, 3));
+  g.instanceCount = n;
+  const m = new THREE.Mesh(g, shader(`
+    attribute vec4 iB; attribute vec3 iB2; varying float vY; varying float vS; varying float vFog;
+    void main(){
+      float g = frontGrow(iB2.y, 4.);
+      g = max(g, (1. - smoothstep(1.2, 4.2, iB2.y)) * clamp(uHero*1.6, 0., 1.));
+      g = eo(g);
+      float y = position.y, h = iB.z*g;
+      float w = .05*(1. - y*.85)*(.4 + .6*g);
+      float c = cos(iB.w), s = sin(iB.w);
+      vec2 side = vec2(c, s)*position.x*w*2.;
+      vec2 lean = vec2(-s, c)*.22*h + vec2(sin(uTime*1.1 + iB2.x + iB.x*.15)*.8 + .4, cos(uTime*.8 + iB2.x)*.4)*.2*h*uWind;
+      vec3 p = vec3(iB.x + side.x + lean.x*y*y, y*h, iB.y + side.y + lean.y*y*y);
+      vY = y; vS = iB2.z;
+      vec4 mv = modelViewMatrix * vec4(p, 1.); vFog = fogOf(mv); gl_Position = projectionMatrix * mv;
+    }
+  `, `
+    varying float vY; varying float vS; varying float vFog;
+    uniform vec3 c1, c2;
+    void main(){ vec3 c = mix(c1, c2, vY) * vS * uTint; gl_FragColor = vec4(mix(c, uFogColor, vFog), 1.); }
+  `, { c1: { value: col(0x06140a) }, c2: { value: col(0x2c5a22) } }, { side: THREE.DoubleSide }));
+  m.frustumCulled = false; scene.add(m);
+}
+
+/* ───────────── Luciérnagas ───────────── */
+const POINT_FRAG = `
+  varying float vA; varying float vT; uniform vec3 pc1, pc2;
+  void main(){ float d = length(gl_PointCoord - .5)*2.; float a = exp(-d*d*4.5)*vA; if (a < .003) discard; gl_FragColor = vec4(mix(pc1, pc2, vT)*1.8, a); }
+`;
+const pointUniforms = () => ({ pc1: { value: col(0xffc23a) }, pc2: { value: col(0xfff1b8) } });
+const ADD = { transparent: true, depthWrite: false, blending: THREE.AdditiveBlending };
+{
+  const n = T.fireflies, p = new Float32Array(n * 3), s = new Float32Array(n * 4);
+  for (let i = 0; i < n; i++) {
+    const r = Math.pow(rand(), .7) * 24, a = rand() * Math.PI * 2;
+    s.set([Math.cos(a) * r * 1.3, rr(.25, 2.6), Math.sin(a) * r * .95 - 2.5, rand()], i * 4);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(p, 3));
+  g.setAttribute("aSeed", new THREE.BufferAttribute(s, 4));
+  const pts = new THREE.Points(g, shader(`
+    attribute vec4 aSeed; varying float vA; varying float vT;
+    void main(){
+      float ph = aSeed.w;
+      vec3 p = aSeed.xyz + vec3(sin(uTime*.31 + ph*6.)*1.6, sin(uTime*.47 + ph*11.)*.5, cos(uTime*.27 + ph*7.)*1.6)*uWind;
+      float dist = length(aSeed.xz);
+      float vis = max(frontGrow(dist, 5.), (1. - smoothstep(1., 5., dist))*smoothstep(.4, .9, uHero));
+      vec4 mv = modelViewMatrix * vec4(p, 1.);
+      gl_Position = projectionMatrix * mv;
+      vA = vis * (.2 + .8*pow(max(0., sin(uTime*1.3 + ph*40.)), 2.)) * .9;
+      vT = fract(ph*7.);
+      gl_PointSize = min(.16*uScale/-mv.z, 48.*uDpr);
+    }
+  `, POINT_FRAG, pointUniforms(), ADD));
+  pts.frustumCulled = false; scene.add(pts);
+}
+
+/* ───────────── Semilla de luz ───────────── */
+{
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute([0, .12, 0], 3));
+  const pts = new THREE.Points(g, shader(`
+    varying float vA; varying float vT;
+    void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.); gl_Position = projectionMatrix * mv;
+      vA = uSeed*(.85 + .15*sin(uTime*2.2)); vT = .6; gl_PointSize = (1.1 + .15*sin(uTime*1.7))*uSeed*uScale/-mv.z; }
+  `, POINT_FRAG, pointUniforms(), ADD));
+  pts.frustumCulled = false; scene.add(pts);
+}
+
+/* ───────────── Partículas (estallidos y final) ───────────── */
+const PART = (() => {
+  const n = T.particles;
+  const pos = new Float32Array(n * 3), vel = new Float32Array(n * 3), life = new Float32Array(n), max = new Float32Array(n);
+  const alpha = new Float32Array(n), size = new Float32Array(n), tone = new Float32Array(n);
+  for (let i = 0; i < n; i++) { tone[i] = rand(); pos[i * 3 + 1] = -999; }
+  const g = new THREE.BufferGeometry();
+  const ap = new THREE.BufferAttribute(pos, 3), aa = new THREE.BufferAttribute(alpha, 1), as = new THREE.BufferAttribute(size, 1);
+  ap.setUsage(THREE.DynamicDrawUsage); aa.setUsage(THREE.DynamicDrawUsage); as.setUsage(THREE.DynamicDrawUsage);
+  g.setAttribute("position", ap); g.setAttribute("aAlpha", aa); g.setAttribute("aSize", as);
+  g.setAttribute("aTone", new THREE.BufferAttribute(tone, 1));
+  const pts = new THREE.Points(g, shader(`
+    attribute float aAlpha; attribute float aSize; attribute float aTone; varying float vA; varying float vT;
+    void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.); gl_Position = projectionMatrix * mv;
+      vA = aAlpha; vT = aTone; gl_PointSize = min(aSize*uScale/-mv.z, 40.*uDpr); }
+  `, POINT_FRAG, pointUniforms(), ADD));
+  pts.frustumCulled = false; scene.add(pts);
+  let cursor = 0, alive = 0;
+  return {
+    emit(x, y, z, vx, vy, vz, lifeS, sz) {
+      const i = cursor; cursor = (cursor + 1) % n;
+      pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
+      vel[i * 3] = vx; vel[i * 3 + 1] = vy; vel[i * 3 + 2] = vz;
+      life[i] = max[i] = lifeS; size[i] = sz; alive = n;
+    },
+    burst(x, y, z, count, power) {
+      for (let k = 0; k < count; k++) {
+        const th = rand() * 6.283, ph = Math.acos(rand() * 2 - 1), sp = power * rr(.4, 1.3);
+        this.emit(x, y, z, Math.sin(ph) * Math.cos(th) * sp, Math.abs(Math.cos(ph)) * sp * .8 + .6, Math.sin(ph) * Math.sin(th) * sp, rr(1.1, 2.6), rr(.05, .13));
+      }
+    },
+    update(dt) {
+      if (!alive) return;
+      const drag = Math.exp(-dt * 1.5);
+      let any = 0;
+      for (let i = 0; i < n; i++) {
+        if (life[i] <= 0) { if (alpha[i] !== 0) alpha[i] = 0; continue; }
+        any = 1;
+        life[i] -= dt;
+        vel[i * 3] *= drag; vel[i * 3 + 1] = vel[i * 3 + 1] * drag - .5 * dt; vel[i * 3 + 2] *= drag;
+        pos[i * 3] += vel[i * 3] * dt; pos[i * 3 + 1] += vel[i * 3 + 1] * dt; pos[i * 3 + 2] += vel[i * 3 + 2] * dt;
+        const k = clamp(life[i] / max[i]);
+        alpha[i] = Math.pow(k, 1.4) * (.75 + .25 * Math.sin(clock * .02 + i));
+      }
+      if (!any) alive = 0;
+      ap.needsUpdate = aa.needsUpdate = as.needsUpdate = true;
+    }
+  };
+})();
+
+/* ───────────── Constelación ───────────── */
+const CONST = (() => {
+  const C = new THREE.Vector3(-5.6, 23, -30), R = 6.2;
+  const targets = [], lines = [];
+  const loopN = 160;
+  for (let i = 0; i < loopN; i++) {
+    const th = i / loopN * Math.PI * 2, r = R * (.38 + .62 * Math.pow(Math.abs(Math.cos(5 * th)), 1.4));
+    targets.push(new THREE.Vector3(C.x + Math.cos(th) * r, C.y + Math.sin(th) * r, C.z));
+    lines.push(i, (i + 1) % loopN);
+  }
+  const ring = targets.length;
+  for (let i = 0; i < 18; i++) {
+    const th = i / 18 * Math.PI * 2;
+    targets.push(new THREE.Vector3(C.x + Math.cos(th) * 1.8, C.y + Math.sin(th) * 1.8, C.z + .2));
+    lines.push(ring + i, ring + (i + 1) % 18);
+  }
+  const stem = targets.length;
+  for (let i = 0; i < 9; i++) {
+    const t = i / 8;
+    targets.push(new THREE.Vector3(C.x + Math.sin(t * 2.2) * .9, C.y - R - t * 9, C.z));
+    if (i) lines.push(stem + i - 1, stem + i);
+  }
+  // la P: palo vertical y una panza que sale de arriba y regresa a la mitad
+  const pX = 5.6, pBot = 15.5, pTop = 30.5, bowlR = 3.6, bowlC = pTop - bowlR;
+  const pPath = [];
+  for (let i = 0; i <= 12; i++) pPath.push([pX, pBot + (pTop - pBot) * i / 12]);
+  for (let i = 1; i <= 3; i++) pPath.push([pX + 1.8 * i / 3, pTop]);
+  for (let i = 1; i <= 14; i++) { const a = Math.PI / 2 - Math.PI * i / 14; pPath.push([pX + 1.8 + Math.cos(a) * bowlR, bowlC + Math.sin(a) * bowlR]); }
+  for (let i = 1; i <= 3; i++) pPath.push([pX + 1.8 - 1.8 * i / 3, bowlC - bowlR]);
+  const pStart = targets.length;
+  pPath.forEach(([x, y], i) => {
+    targets.push(new THREE.Vector3(x, y, C.z));
+    if (i) lines.push(pStart + i - 1, pStart + i);
+  });
+  const n = targets.length;
+  const start = [], mid = [], delay = [];
+  const pos = new Float32Array(n * 3), alpha = new Float32Array(n), size = new Float32Array(n), tone = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    start.push(new THREE.Vector3()); mid.push(new THREE.Vector3());
+    delay.push(rand()); tone[i] = rand();
+  }
+  const g = new THREE.BufferGeometry();
+  const ap = new THREE.BufferAttribute(pos, 3), aa = new THREE.BufferAttribute(alpha, 1);
+  ap.setUsage(THREE.DynamicDrawUsage); aa.setUsage(THREE.DynamicDrawUsage);
+  g.setAttribute("position", ap); g.setAttribute("aAlpha", aa);
+  g.setAttribute("aSize", new THREE.BufferAttribute(size, 1)); g.setAttribute("aTone", new THREE.BufferAttribute(tone, 1));
+  const pts = new THREE.Points(g, shader(`
+    attribute float aAlpha; attribute float aSize; attribute float aTone; varying float vA; varying float vT;
+    void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.); gl_Position = projectionMatrix * mv;
+      vA = aAlpha; vT = aTone; gl_PointSize = max(aSize*uScale/-mv.z, 2.*uDpr); }
+  `, POINT_FRAG, pointUniforms(), ADD));
+  pts.frustumCulled = false; scene.add(pts);
+
+  const lp = new Float32Array(lines.length * 3);
+  lines.forEach((t, k) => lp.set(targets[t].toArray(), k * 3));
+  const lg = new THREE.BufferGeometry(); lg.setAttribute("position", new THREE.BufferAttribute(lp, 3));
+  const lm = new THREE.LineBasicMaterial({ color: 0xffdf80, transparent: true, opacity: 0, ...ADD });
+  const seg = new THREE.LineSegments(lg, lm); seg.frustumCulled = false; scene.add(seg);
+
+  let ready = false;
+  return {
+    prepare() {
+      for (let i = 0; i < n; i++) {
+        const f = 1 + Math.floor(rand() * (COUNT - 1));
+        start[i].copy(headPos(f));
+        mid[i].set(start[i].x * .5 + rr(-5, 5), rr(9, 15), start[i].z * .5 + rr(-6, 2));
+      }
+      ready = true;
+    },
+    update(ascend, form, sunset) {
+      if (!ready) return;
+      const time = clock * .001;
+      for (let i = 0; i < n; i++) {
+        const t = E.inOutSine(clamp((ascend * 1.6 - delay[i]) / .6));
+        const u = 1 - t, a = start[i], m = mid[i], b = targets[i];
+        const x = u * u * a.x + 2 * u * t * m.x + t * t * b.x;
+        const y = u * u * a.y + 2 * u * t * m.y + t * t * b.y;
+        const z = u * u * a.z + 2 * u * t * m.z + t * t * b.z;
+        pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
+        const tw = .7 + .3 * Math.sin(time * 2.3 + i * 1.7);
+        alpha[i] = (t > 0 ? clamp(t * 12) : 0) * tw * (1 - sunset * .35);
+        size[i] = .16 + .3 * t + .18 * form;
+        if (t > 0 && t < .98 && rand() < .06) PART.emit(x, y, z, rr(-.2, .2), rr(-.3, .1), rr(-.2, .2), rr(.8, 1.6), .06);
+      }
+      ap.needsUpdate = aa.needsUpdate = true; g.attributes.aSize.needsUpdate = true;
+      lm.opacity = form * .42 * (1 - sunset * .45);
+    }
+  };
+})();
+
+/* ───────────── Posprocesado: bloom ───────────── */
+const composer = new EffectComposer(renderer);
+composer.setPixelRatio(DPR);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), .75, .55, T.bloom);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+/* ───────────── Cámara ───────────── */
+const pose = (p, t, fov) => ({ pos: new THREE.Vector3(...p), target: new THREE.Vector3(...t), fov });
+const POSE = {
+  seed:     pose([0, 1.15, 5.2], [0, .55, 0], 46),
+  growth:   pose([0, 2.05, 5.6], [0, 1.75, 0], 44),
+  pullback: pose([0, 5.4, 16.5], [0, 1.9, -3], 52),
+  sky:      pose([0, 7.5, 15], [0, 20, -22], 50),
+  sunset:   pose([0, 3.3, 14.8], [0, 2.3, -4], 50)
+};
+const cam = { pos: POSE.seed.pos.clone(), target: POSE.seed.target.clone(), fov: POSE.seed.fov };
+const look = { yaw: 0, pitch: 0, tYaw: 0, tPitch: 0 };
+const pointer = { x: 0, y: 0, sx: 0, sy: 0 };
+function moveCam(p, ms, ease = E.inOutCubic) {
+  const p0 = cam.pos.clone(), t0 = cam.target.clone(), f0 = cam.fov;
+  return anim(ms, k => { cam.pos.lerpVectors(p0, p.pos, k); cam.target.lerpVectors(t0, p.target, k); cam.fov = f0 + (p.fov - f0) * k; }, ease);
+}
+const tmpV = new THREE.Vector3(), tmpD = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
+function applyCamera(dt) {
+  const k = 1 - Math.exp(-dt * 5);
+  look.yaw += (look.tYaw - look.yaw) * k; look.pitch += (look.tPitch - look.pitch) * k;
+  pointer.sx += (pointer.x - pointer.sx) * k; pointer.sy += (pointer.y - pointer.sy) * k;
+  const t = clock * .001;
+  camera.position.copy(cam.pos).add(tmpV.set(Math.sin(t * .11) * .25, Math.sin(t * .17) * .08, 0));
+  tmpD.copy(cam.target).sub(cam.pos);
+  const on = S.lookOn;
+  tmpD.applyAxisAngle(UP, (look.yaw + pointer.sx * .05) * on - pointer.sx * .015);
+  const right = tmpV.crossVectors(tmpD, UP).normalize();
+  tmpD.applyAxisAngle(right, (look.pitch - pointer.sy * .03) * on + pointer.sy * .01);
+  camera.lookAt(tmpD.add(camera.position));
+  const aspect = innerWidth / innerHeight;
+  const fov = Math.min(78, cam.fov * (aspect < 1 ? 1 + (1 - aspect) * .62 : 1));
+  if (camera.fov !== fov || camera.aspect !== aspect) { camera.fov = fov; camera.aspect = aspect; camera.updateProjectionMatrix(); }
+  U.uScale.value = renderer.domElement.height * .5 / Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+}
+
+/* ───────────── Estado de la historia ───────────── */
+const S = { seed: 0, hero: 0, garden: 0, sunset: 0, stars: 0, ascend: 0, form: 0, lookOn: 0 };
+let phase = "intro";
+let pulseAt = -1e9;
+const found = new Set();
+
+function growCPU(i) {
+  if (F.hero[i]) return S.hero;
+  return clamp((S.garden * (U.uMaxDist.value + 7) - F.dist[i] - 1) / 6);
+}
+function headPos(i, out = new THREE.Vector3()) {
+  const st = E.outCubic(clamp(growCPU(i) / .65)), h = F.h[i] * st;
+  return out.set(F.x[i] + F.bx[i] * h, h + F.head[i] * .12, F.z[i] + F.bz[i] * h);
+}
+function pulse() { pulseAt = clock; }
+
+/* ───────────── Texto ───────────── */
+function words(el, text, stagger = .1) {
+  el.textContent = "";
+  el.setAttribute("aria-label", text);
+  text.split(" ").forEach((w, i) => {
+    const s = document.createElement("span");
+    s.className = "w"; s.setAttribute("aria-hidden", "true");
+    s.style.animationDelay = (i * stagger).toFixed(2) + "s";
+    s.textContent = w;
+    el.append(s, " ");
+  });
+}
+async function say(text, hold, tone = "soft") {
+  const p = document.createElement("p");
+  p.className = "display glow " + tone;
+  words(p, text, tone === "big" ? .13 : .09);
+  $("sub").replaceChildren(p);
+  await wait(hold);
+  p.classList.add("out");
+  await wait(1300);
+  p.remove();
+}
+function setHint(t) {
+  const h = $("hint");
+  if (t) { h.textContent = t; h.classList.add("on"); } else h.classList.remove("on");
+}
+const dots = $("dots");
+CONFIG.frases.forEach(() => dots.appendChild(document.createElement("i")));
+function refreshDots() {
+  [...dots.children].forEach((d, i) => d.classList.toggle("found", found.has(i)));
+  dots.setAttribute("aria-label", `${found.size} de ${CONFIG.frases.length} frases encontradas`);
+}
+refreshDots();
+
+let card = null, cardTimer = 0, lastTap = 0;
+function hideCard() {
+  if (!card) return;
+  const c = card; card = null; clearTimeout(cardTimer);
+  c.classList.add("out"); setTimeout(() => c.remove(), 900);
+}
+function showCard(text, x, y) {
+  hideCard();
+  const half = Math.min(170, innerWidth / 2 - 16);
+  const c = document.createElement("div");
+  c.className = "card display";
+  c.style.width = half * 2 + "px";
+  c.style.left = clamp(x, half + 8, innerWidth - half - 8) + "px";
+  c.style.top = Math.max(y - 18, 120) + "px";
+  c.textContent = text;
+  $("cards").appendChild(c);
+  card = c;
+  cardTimer = setTimeout(hideCard, 4200 + text.length * 55);
+}
+
+/* ───────────── Interacción: tocar flores y arrastrar ───────────── */
+const proj = new THREE.Vector3();
+function pickFlower(px, py) {
+  let best = -1, bestScore = 1;
+  const tanH = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+  for (let i = 0; i < COUNT; i++) {
+    if (growCPU(i) < .85) continue;
+    headPos(i, proj);
+    const d = proj.distanceTo(camera.position);
+    proj.project(camera);
+    if (proj.z > 1) continue;
+    const sx = (proj.x * .5 + .5) * innerWidth, sy = (-proj.y * .5 + .5) * innerHeight;
+    const rad = Math.max(46, F.head[i] / (d * tanH) * innerHeight * .5 * 2.2);
+    const score = Math.hypot(sx - px, sy - py) / rad;
+    if (score < bestScore) { bestScore = score; best = i; }
+  }
+  return best;
+}
+const NOTES = [0, 2, 4, 7, 9, 12, 14, 16];
+function tapAt(px, py) {
+  const interactive = phase === "garden" || phase === "return" || phase === "finale";
+  if (!interactive) return;
+  const i = pickFlower(px, py);
+  if (i < 0) return;
+  glow[i] = 1.4;
+  const hp = headPos(i);
+  PART.burst(hp.x, hp.y, hp.z, 38, 1.5);
+  sound.chime(NOTES[Math.floor(rand() * NOTES.length)]);
+  hp.project(camera);
+  const sx = (hp.x * .5 + .5) * innerWidth, sy = (-hp.y * .5 + .5) * innerHeight;
+  const carrotK = CONFIG.frases.indexOf(CONFIG.zanahoria), firstK = CONFIG.frases.indexOf(CONFIG.primera);
+  const all = CONFIG.frases.map((_, k) => k).filter(k => k !== carrotK && k !== firstK);
+  const pending = all.filter(k => !found.has(k));
+  const repeat = all.filter(k => !CONFIG.soloUnaVez.includes(CONFIG.frases[k]));
+  const k = i === CARROT && carrotK >= 0 ? carrotK
+    : i === 0 && firstK >= 0 ? firstK
+    : pending.length ? pending[Math.floor(rand() * pending.length)] : repeat[Math.floor(rand() * repeat.length)];
+  found.add(k); refreshDots();
+  lastTap = clock;
+  showCard(CONFIG.frases[k], sx, sy);
+}
+let down = null;
+canvas.addEventListener("pointerdown", e => {
+  down = { x: e.clientX, y: e.clientY, t: performance.now(), yaw: look.tYaw, pitch: look.tPitch, moved: false };
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener("pointermove", e => {
+  pointer.x = e.clientX / innerWidth * 2 - 1; pointer.y = e.clientY / innerHeight * 2 - 1;
+  if (!down) return;
+  const dx = e.clientX - down.x, dy = e.clientY - down.y;
+  if (Math.hypot(dx, dy) > 8) { down.moved = true; canvas.classList.add("dragging"); }
+  if (down.moved && S.lookOn > .5) {
+    look.tYaw = clamp(down.yaw + dx * .0035, -.75, .75);
+    look.tPitch = clamp(down.pitch + dy * .0025, -.3, .25);
+  }
+});
+const endDrag = e => {
+  if (!down) return;
+  if (!down.moved && performance.now() - down.t < 600) tapAt(e.clientX, e.clientY);
+  down = null; canvas.classList.remove("dragging");
+};
+canvas.addEventListener("pointerup", endDrag);
+canvas.addEventListener("pointercancel", () => { down = null; canvas.classList.remove("dragging"); });
+addEventListener("pointerleave", () => { pointer.x = pointer.y = 0; });
+
+const muteBtn = $("mute");
+let muted = false;
+muteBtn.addEventListener("click", () => {
+  muted = !muted; sound.setMuted(muted);
+  muteBtn.setAttribute("aria-label", muted ? "Activar sonido" : "Silenciar");
+  $("icOn").style.display = muted ? "none" : ""; $("icOff").style.display = muted ? "" : "none";
+});
+
+/* ───────────── Intro ───────────── */
+const intro = $("intro"), introLine = $("introLine"), go = $("go");
+let introIdx = -1, introTimer = 0;
+function nextIntro() {
+  clearTimeout(introTimer);
+  introIdx++;
+  const prev = introLine.firstChild;
+  if (prev) { prev.classList.add("out"); }
+  setTimeout(() => {
+    if (introIdx < CONFIG.intro.length) {
+      const p = document.createElement("p");
+      const text = fill(CONFIG.intro[introIdx]);
+      words(p, text, .12);
+      introLine.replaceChildren(p);
+      introTimer = setTimeout(nextIntro, 2600 + text.split(" ").length * 230 + 1400);
+    } else if (introIdx === CONFIG.intro.length) {
+      introLine.replaceChildren();
+      go.hidden = false;
+      go.focus({ preventScroll: true });
+    }
+  }, prev ? 1100 : 0);
+}
+introTimer = setTimeout(nextIntro, 1800);
+intro.addEventListener("click", () => { if (introIdx >= 0 && introIdx < CONFIG.intro.length) nextIntro(); });
+go.addEventListener("click", e => {
+  e.stopPropagation();
+  sound.start();
+  intro.classList.add("gone");
+  setTimeout(() => intro.remove(), 1700);
+  muteBtn.hidden = false;
+  story();
+}, { once: true });
+
+/* ───────────── La historia ───────────── */
+async function story() {
+  phase = "birth"; sound.mood("birth");
+  await tween(S, "seed", 1, 2600, E.outCubic);
+  await wait(1200);
+  const grow = tween(S, "hero", 1, 12500, E.inOutSine);
+  const camGo = (async () => { await wait(1000); await moveCam(POSE.growth, 9500, E.inOutSine); })();
+  (async () => { await wait(5500); await tween(S, "seed", .0, 6000); })();
+  await Promise.all([grow, camGo]);
+  sound.chime(7, .12);
+  await wait(900);
+  await say(CONFIG.unaFlor, 3800, "big");
+
+  phase = "explosion"; sound.mood("garden"); pulse();
+  const pull = moveCam(POSE.pullback, 11000, E.inOutCubic);
+  const bloomAll = (async () => { await wait(1200); await tween(S, "garden", 1, 14000, E.inOutSine); })();
+  await Promise.all([pull, bloomAll]);
+
+  phase = "garden";
+  await tween(S, "lookOn", 1, 1500);
+  setHint(CONFIG.pista);
+  $("dots").classList.add("on");
+  (async () => { await wait(8000); if (phase === "garden") setHint(null); })();
+  const g0 = clock;
+  while (true) {
+    await wait(500);
+    const el = (clock - g0) / SPEED, n = found.size;
+    if (n >= CONFIG.frases.length) { await wait(6500); break; }
+    // sigue en el jardín mientras siga tocando girasoles; avanza tras 30 s sin tocar nada (o 3 min como máximo)
+    const idle = (clock - Math.max(lastTap, g0)) / SPEED;
+    if ((idle > 30000 && !card) || el > 180000) break;
+  }
+
+  phase = "constellation";
+  hideCard(); setHint(null); $("dots").classList.remove("on");
+  look.tYaw = 0; look.tPitch = 0;
+  tween(S, "lookOn", 0, 1600);
+  await wait(1200);
+  await say(CONFIG.cielo, 5200);
+  sound.mood("sky"); sound.shimmer();
+  tween(S, "stars", 1, 6000);
+  CONST.prepare();
+  const up = tween(S, "ascend", 1, 17000, E.linear);
+  const camUp = (async () => { await wait(1200); await moveCam(POSE.sky, 15500, E.inOutSine); })();
+  await Promise.all([up, camUp]);
+  await tween(S, "form", 1, 6500);
+  await wait(3500);
+
+  phase = "return"; sound.mood("sunset");
+  tween(S, "sunset", 1, 12000);
+  tween(S, "stars", .5, 9000);
+  const down2 = moveCam(POSE.sunset, 11000, E.inOutCubic);
+  (async () => { await wait(9000); await tween(S, "lookOn", 1, 2000); $("dots").classList.add("on"); })();
+  await wait(6500);
+  const lines = $("finalLines");
+  for (const t of CONFIG.finales) {
+    [...lines.children].forEach(p => p.style.opacity = .55);
+    const p = document.createElement("p");
+    words(p, fill(t), .1);
+    lines.appendChild(p);
+    await wait(4300);
+  }
+  await down2;
+  await wait(1200);
+
+  phase = "finale"; pulse();
+  [...lines.children].forEach(p => p.style.opacity = .5);
+  const btn = $("finBtn");
+  btn.textContent = CONFIG.boton;
+  btn.setAttribute("aria-label", CONFIG.boton + " — tócalo");
+  btn.hidden = false;
+  setTimeout(() => $("tocalo").classList.add("on"), 3500);
+  setTimeout(() => {
+    const pb = $("petalBtn");
+    pb.textContent = CONFIG.botonPetalos;
+    pb.hidden = false;
+  }, 6000);
+}
+
+/* ───────────── Gran final ───────────── */
+let fountainUntil = -1, busy = false;
+function hideFinalUI() {
+  [...$("finalLines").children].forEach(p => p.style.opacity = 0);
+  $("finBtn").classList.add("hide"); $("finBtn").disabled = true;
+  $("petalBtn").classList.add("hide"); $("petalBtn").disabled = true;
+  $("tocalo").classList.remove("on");
+}
+function showFinalUI() {
+  [...$("finalLines").children].forEach(p => p.style.opacity = .5);
+  $("finBtn").classList.remove("hide"); $("finBtn").disabled = false;
+  $("petalBtn").classList.remove("hide"); $("petalBtn").disabled = false;
+  $("tocalo").classList.add("on");
+  busy = false;
+}
+$("finBtn").addEventListener("click", () => {
+  if (busy) return;
+  busy = true;
+  sound.mood("finale"); sound.arpeggio(); pulse();
+  hideFinalUI();
+  for (let k = 0; k < 36; k++) setTimeout(() => {
+    const i = Math.floor(rand() * COUNT), hp = headPos(i);
+    glow[i] = 1.6;
+    PART.burst(hp.x, hp.y, hp.z, 50, 2);
+    if (k % 6 === 0) sound.chime(NOTES[k % NOTES.length] + 12, .05);
+  }, k * 140);
+  fountainUntil = clock + 7000;
+  setTimeout(() => { showFinalUI(); sound.mood("sunset"); }, 21000);
+});
+
+/* ───────────── Pétalos que forman un mensaje en el aire ───────────── */
+const PETALS = (() => {
+  const cv = $("petals"), ctx = cv.getContext("2d");
+  const FONT = fs => `italic 500 ${fs}px "Cormorant Garamond", Georgia, serif`;
+  let W = 0, H = 0;
+
+  function layout(text) {
+    const o = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+    o.font = FONT(100);
+    const ratio = t => o.measureText(t).width / 100;
+    let lines = [text];
+    let fs = Math.min(H * .2, 170, W * .86 / ratio(text));
+    if (fs < 64 && text.includes(" ")) {
+      // en pantallas angostas: dos renglones lo más parejos posible
+      const words = text.split(" ");
+      let best = null;
+      for (let i = 1; i < words.length; i++) {
+        const a = words.slice(0, i).join(" "), b = words.slice(i).join(" ");
+        const w = Math.max(ratio(a), ratio(b));
+        if (!best || w < best.w) best = { w, l: [a, b] };
+      }
+      lines = best.l;
+      fs = Math.min(H * .14, 150, W * .86 / best.w);
+    }
+    o.canvas.width = W; o.canvas.height = H;
+    o.font = FONT(fs); o.textAlign = "center"; o.textBaseline = "middle"; o.fillStyle = "#fff";
+    const cy = H * (lines.length > 1 ? .3 : .38), lh = fs * 1.02;
+    lines.forEach((l, i) => o.fillText(l, W / 2, cy + (i - (lines.length - 1) / 2) * lh));
+    const data = o.getImageData(0, 0, W, H).data;
+    const step = Math.max(4, Math.round(fs / 16));
+    let pts = [];
+    for (let y = 0; y < H; y += step) for (let x = 0; x < W; x += step)
+      if (data[(y * W + x) * 4 + 3] > 140) pts.push([x + (rand() - .5) * step * .5, y + (rand() - .5) * step * .5]);
+    const max = T.particles >= 5000 ? 1500 : 900;
+    while (pts.length > max) pts.splice(Math.floor(rand() * pts.length), 1);
+    return { pts, step, lines, fs, cy, lh };
+  }
+
+  function play(text, onDone) {
+    const dpr = Math.min(devicePixelRatio || 1, 2);
     W = innerWidth; H = innerHeight;
     cv.width = W * dpr; cv.height = H * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-
-  const rnd = (a, b) => a + Math.random() * (b - a);
-
-  function makeFlower(x, delay, scale) {
-    const s = scale || rnd(.7, 1.15) * Math.min(1, W / 520 + .35);
-    return {
-      x, base: H + 4,
-      h: rnd(H * .22, H * .5) * Math.min(1.1, s + .15),
-      bend: rnd(-60, 60) * s,
-      size: rnd(26, 40) * s,
-      petals: Math.round(rnd(9, 14)),
-      phase: rnd(0, Math.PI * 2),
-      born: performance.now() + (delay || 0),
-      leafSide: Math.random() < .5 ? -1 : 1,
-      hue: rnd(-6, 6)
-    };
-  }
-
-  function seed() {
-    flowers.length = 0; flies.length = 0; stars.length = 0;
-    const count = Math.max(5, Math.min(11, Math.round(W / 70)));
-    for (let i = 0; i < count; i++) {
-      const x = (i + .5) / count * W + rnd(-20, 20);
-      flowers.push(makeFlower(x, 300 + i * 260 + rnd(0, 300)));
-    }
-    for (let i = 0; i < 26; i++) flies.push({x: rnd(0, W), y: rnd(H * .3, H), p: rnd(0, 7), sp: rnd(.2, .6)});
-    for (let i = 0; i < 70; i++) stars.push({x: rnd(0, W), y: rnd(0, H * .6), r: rnd(.3, 1.2), p: rnd(0, 7)});
-  }
-
-  const ease = t => 1 - Math.pow(1 - Math.min(Math.max(t, 0), 1), 3);
-
-  function stemPoint(f, t, sway) {
-    const x0 = f.x, y0 = f.base;
-    const cx = f.x + f.bend + sway * .5, cy = f.base - f.h * .55;
-    const x1 = f.x + f.bend * .6 + sway, y1 = f.base - f.h;
-    const u = 1 - t;
-    return [u*u*x0 + 2*u*t*cx + t*t*x1, u*u*y0 + 2*u*t*cy + t*t*y1];
-  }
-
-  function drawFlower(f, now) {
-    const age = (now - f.born) / 1000;
-    if (age < 0) return;
-    const grow = reduce ? 1 : ease(age / 2.2);
-    const bloom = reduce ? 1 : ease((age - 1.8) / 1.6);
-    const sway = Math.sin(now / 1400 + f.phase) * 10 * grow;
-
-    // stem
-    ctx.lineCap = "round";
-    ctx.strokeStyle = "#3f7a2c";
-    ctx.lineWidth = Math.max(2, f.size * .1);
-    ctx.beginPath();
-    const steps = 30;
-    for (let i = 0; i <= steps * grow; i++) {
-      const [x, y] = stemPoint(f, i / steps, sway);
-      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
-    }
-    ctx.stroke();
-
-    // leaf
-    const leafT = .45;
-    if (grow > leafT) {
-      const lg = ease((grow - leafT) / .4);
-      const [lx, ly] = stemPoint(f, leafT, sway);
-      ctx.save();
-      ctx.translate(lx, ly);
-      ctx.rotate(f.leafSide * .9 + sway * .01);
-      ctx.scale(lg, lg);
-      const L = f.size * 1.1;
-      ctx.fillStyle = "#4f9a36";
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.quadraticCurveTo(f.leafSide * L * .5, -L * .35, f.leafSide * L, 0);
-      ctx.quadraticCurveTo(f.leafSide * L * .5, L * .3, 0, 0);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    if (bloom <= 0) return;
-    const [hx, hy] = stemPoint(f, grow, sway);
-    const R = f.size * bloom;
-    ctx.save();
-    ctx.translate(hx, hy);
-    ctx.rotate(Math.sin(now / 2000 + f.phase) * .08 + now / 40000);
-
-    // glow
-    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, R * 2.4);
-    g.addColorStop(0, "rgba(255,210,63,.28)");
-    g.addColorStop(1, "rgba(255,210,63,0)");
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(0, 0, R * 2.4, 0, Math.PI * 2); ctx.fill();
-
-    // two rings of petals
-    for (let ring = 0; ring < 2; ring++) {
-      const n = f.petals, off = ring ? Math.PI / n : 0;
-      const len = R * (ring ? .82 : 1), wid = R * (ring ? .3 : .34);
-      for (let i = 0; i < n; i++) {
+    const L = layout(text);
+    const petals = L.pts.map(([tx, ty]) => {
+      const fromLeft = rand() < .45;
+      const sx = fromLeft ? -30 - rand() * 120 : rand() * W, sy = fromLeft ? H * (.25 + rand() * .7) : H + 30 + rand() * 80;
+      const hue = rand() < .08 ? rr(26, 34) : rr(40, 52);
+      return {
+        sx, sy, tx, ty, x: sx, y: sy,
+        cx: (sx + tx) / 2 + (rand() - .5) * W * .35, cy: Math.min(sy, ty) - rand() * H * .25,
+        delay: rand() * 1.4, dur: rr(1.8, 2.6),
+        rot: rand() * 6.283, spin: rr(-3, 3), flip: rand() * 6.283, ph: rand() * 6.283,
+        size: L.step * rr(1.05, 1.4),
+        color: `hsl(${hue.toFixed(0)},100%,${rr(52, 68).toFixed(0)}%)`,
+        wind: rr(380, 520), vx: 0, vy: 0
+      };
+    });
+    const HOLD = 1.4 + 2.6 + 3.4, GONE = HOLD + .9 + 3;
+    let t0 = performance.now(), last = t0, holdCue = false, relCue = false;
+    $("petalMsg").textContent = text;
+    sound.shimmer(); sound.gust();
+    function step(now) {
+      const t = (now - t0) / 1000, dt = Math.min(.05, (now - last) / 1000); last = now;
+      ctx.clearRect(0, 0, W, H);
+      if (!holdCue && t > 3.6) { holdCue = true; sound.arpeggio(); pulse(); }
+      if (!relCue && t > HOLD) { relCue = true; sound.gust(); }
+      // brillo suave detrás de las letras mientras el mensaje está formado
+      const glowA = clamp((t - 3) / 1.2) * (1 - clamp((t - HOLD) / 1.2));
+      if (glowA > 0) {
         ctx.save();
-        ctx.rotate(off + i / n * Math.PI * 2);
-        const pg = ctx.createLinearGradient(0, 0, 0, -len);
-        pg.addColorStop(0, ring ? "hsl(" + (38 + f.hue) + ",100%,52%)" : "hsl(" + (40 + f.hue) + ",100%,48%)");
-        pg.addColorStop(1, ring ? "hsl(" + (50 + f.hue) + ",100%,68%)" : "hsl(" + (46 + f.hue) + ",100%,60%)");
-        ctx.fillStyle = pg;
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.bezierCurveTo(wid, -len * .3, wid * .8, -len * .9, 0, -len);
-        ctx.bezierCurveTo(-wid * .8, -len * .9, -wid, -len * .3, 0, 0);
-        ctx.fill();
+        ctx.font = FONT(L.fs); ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.shadowColor = "rgba(255,200,60,.9)"; ctx.shadowBlur = L.fs * .35;
+        ctx.fillStyle = `rgba(255,214,90,${(.22 * glowA).toFixed(3)})`;
+        L.lines.forEach((l, i) => ctx.fillText(l, W / 2, L.cy + (i - (L.lines.length - 1) / 2) * L.lh));
         ctx.restore();
       }
+      for (const p of petals) {
+        let a = 1;
+        const rt = t - HOLD - (p.tx / W) * .9;
+        if (rt > 0) {
+          // el viento se los lleva de izquierda a derecha
+          p.vx += (p.wind - p.vx) * dt * 1.4;
+          p.vy += (Math.sin(t * 2.3 + p.ph) * 70 - 35 - p.vy) * dt * 1.6;
+          p.x += p.vx * dt; p.y += p.vy * dt;
+          a = 1 - clamp(rt / 2.8);
+        } else {
+          if (t < p.delay) continue;
+          const k = E.outCubic(clamp((t - p.delay) / p.dur)), u = 1 - k;
+          const wob = Math.sin(t * 2 + p.ph);
+          p.x = u * u * p.sx + 2 * u * k * p.cx + k * k * p.tx + wob * (1 - k) * 14 + Math.sin(t * 1.6 + p.ph) * .8;
+          p.y = u * u * p.sy + 2 * u * k * p.cy + k * k * p.ty + Math.cos(t * 1.7 + p.ph) * (1 - k) * 10 + Math.cos(t * 1.3 + p.ph) * .8;
+        }
+        p.rot += p.spin * dt * (rt > 0 ? 2.2 : .35);
+        p.flip += dt * 2.2;
+        if (a <= 0) continue;
+        ctx.save();
+        ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+        ctx.scale(1, .35 + .65 * Math.abs(Math.cos(p.flip)));
+        ctx.globalAlpha = a;
+        ctx.fillStyle = p.color;
+        ctx.beginPath(); ctx.ellipse(0, 0, p.size * .3, p.size * .62, 0, 0, 6.283); ctx.fill();
+        ctx.restore();
+      }
+      if (t < GONE) requestAnimationFrame(step);
+      else { ctx.clearRect(0, 0, W, H); $("petalMsg").textContent = ""; onDone(); }
     }
-    // center
-    ctx.fillStyle = "#6b3d12";
-    ctx.beginPath(); ctx.arc(0, 0, R * .3, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#a8641c";
-    for (let i = 0; i < 14; i++) {
-      const a = i * 2.4, r = Math.sqrt(i / 14) * R * .24;
-      ctx.beginPath(); ctx.arc(Math.cos(a) * r, Math.sin(a) * r, R * .035, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.restore();
+    requestAnimationFrame(step);
   }
-
-  function frame(now) {
-    ctx.clearRect(0, 0, W, H);
-    for (const s of stars) {
-      ctx.fillStyle = "rgba(255,246,220," + (.35 + .35 * Math.sin(now / 900 + s.p)) + ")";
-      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
-    }
-    flowers.sort((a, b) => a.h - b.h);
-    for (const f of flowers) drawFlower(f, now);
-    for (const p of flies) {
-      if (!reduce) { p.x += Math.cos(now / 1700 + p.p) * p.sp; p.y += Math.sin(now / 1300 + p.p) * p.sp * .7; }
-      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
-      if (p.y < H * .25) p.y = H; if (p.y > H) p.y = H * .25;
-      const a = .3 + .6 * Math.max(0, Math.sin(now / 700 + p.p * 3));
-      ctx.fillStyle = "rgba(255,226,120," + a + ")";
-      ctx.shadowColor = "rgba(255,210,63,.9)"; ctx.shadowBlur = 8;
-      ctx.beginPath(); ctx.arc(p.x, p.y, 1.6, 0, Math.PI * 2); ctx.fill();
-      ctx.shadowBlur = 0;
-    }
-    requestAnimationFrame(frame);
-  }
-
-  addEventListener("pointerdown", e => {
-    const f = makeFlower(e.clientX, 0);
-    f.h = Math.max(60, H - e.clientY + rnd(-20, 20));
-    f.bend = rnd(-30, 30);
-    flowers.push(f);
-    if (flowers.length > 40) flowers.shift();
-  });
-
-  let t;
-  addEventListener("resize", () => { clearTimeout(t); t = setTimeout(() => { resize(); seed(); }, 200); });
-  resize(); seed(); requestAnimationFrame(frame);
+  return { play };
 })();
+
+$("petalBtn").addEventListener("click", async () => {
+  if (busy) return;
+  busy = true;
+  hideFinalUI();
+  try { await document.fonts.load('italic 500 100px "Cormorant Garamond"'); } catch (e) {}
+  PETALS.play(fill(CONFIG.mensajePetalos), () => { showFinalUI(); sound.mood("sunset"); });
+});
+
+
+/* ───────────── Bucle ───────────── */
+const NIGHT_TINT = new THREE.Vector3(.92, .9, 1), DUSK_TINT = new THREE.Vector3(1.0, .88, .76);
+const FOG_N = col(0x12102a), FOG_S = col(0x5a2a3c);
+function resize() {
+  renderer.setSize(innerWidth, innerHeight, false);
+  composer.setSize(innerWidth, innerHeight);
+}
+addEventListener("resize", resize);
+resize();
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(.1, (now - last) / 1000); last = now;
+  clock += dt * 1000;
+  for (const t of tasks) if (t.step()) tasks.delete(t);
+
+  U.uTime.value = clock * .001;
+  U.uHero.value = S.hero; U.uGarden.value = S.garden; U.uSeed.value = S.seed;
+  U.uSunset.value = S.sunset; U.uStars.value = S.stars;
+  U.uTint.value.lerpVectors(NIGHT_TINT, DUSK_TINT, S.sunset);
+  U.uFogColor.value.copy(FOG_N).lerp(FOG_S, S.sunset);
+  const pk = (clock - pulseAt) / 3800;
+  U.uPulseR.value = pk < 1 ? pk * (U.uMaxDist.value + 12) : -100;
+  U.uPulseAmt.value = pk < 1 ? Math.pow(1 - pk, 1.5) * 1.1 : 0;
+
+  let g = false;
+  const decay = Math.exp(-dt * 1.3);
+  for (let i = 0; i < COUNT; i++) if (glow[i] > .001) { glow[i] *= decay; g = true; } else if (glow[i]) { glow[i] = 0; g = true; }
+  if (g) A.iGlow.needsUpdate = true;
+
+  if (clock < fountainUntil) {
+    for (let k = 0; k < 26; k++) {
+      const i = Math.floor(rand() * COUNT), hp = headPos(i, tmpV);
+      PART.emit(hp.x, hp.y, hp.z, rr(-.4, .4), rr(1.5, 3.6), rr(-.4, .4), rr(1.6, 3.2), rr(.05, .12));
+    }
+  }
+  PART.update(dt);
+  CONST.update(S.ascend, S.form, S.sunset);
+
+  applyCamera(dt);
+  sky.position.copy(camera.position);
+  starsGroup.position.copy(camera.position);
+  composer.render();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
 </script>
 </body>
 </html>
