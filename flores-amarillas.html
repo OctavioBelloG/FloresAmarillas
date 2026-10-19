@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flores Amarillas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,400;1,9..144,600&family=Nunito:wght@400;600&display=swap">
+<style>
+/* Layout: full-screen night garden on canvas; message floats in the upper third. Single dark look by choice. */
+:root{
+  --night:#07060d;
+  --night-2:#141029;
+  --petal:#ffd23f;
+  --petal-deep:#f4a300;
+  --ink:#fff6dc;
+  --ink-soft:#c9c0a6;
+  --display:"Fraunces", Georgia, "Times New Roman", serif;
+  --body:"Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{
+  background:radial-gradient(120% 80% at 50% 110%, var(--night-2), var(--night) 70%);
+  background-color:var(--night);
+  color:var(--ink);font-family:var(--body);overflow:hidden;
+  -webkit-tap-highlight-color:transparent;
+}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+.msg{
+  position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 9vh);
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+  text-align:center;pointer-events:none;z-index:2;
+  display:flex;flex-direction:column;align-items:center;gap:.6rem;
+}
+.eyebrow{font-size:.75rem;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-soft);
+  animation:rise 1.6s ease-out .3s both}
+h1{margin:0;font-family:var(--display);font-style:italic;font-weight:600;
+  font-size:clamp(2.2rem,8vw,4.2rem);line-height:1.05;text-wrap:balance;
+  color:var(--petal);text-shadow:0 0 28px rgba(255,210,63,.35);
+  animation:rise 1.8s ease-out .8s both}
+p{margin:0;max-width:30ch;font-size:clamp(1rem,3.6vw,1.15rem);line-height:1.55;color:var(--ink);
+  text-wrap:balance;animation:rise 1.8s ease-out 1.6s both}
+.hint{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);
+  text-align:center;font-size:.8rem;color:var(--ink-soft);opacity:.75;z-index:2;pointer-events:none;
+  animation:rise 1.5s ease-out 4s both}
+@keyframes rise{from{opacity:.0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.eyebrow,h1,p,.hint{animation:none}}
+</style>
+</head>
+<body>
+
+<canvas id="garden" aria-label="Flores amarillas creciendo de noche"></canvas>
+<div class="msg">
+  <div class="eyebrow">Un detalle con cariño</div>
+  <h1 id="title">Para ti, amiga</h1>
+  <p>Unas flores amarillas para que tu día brille un poquito más. Gracias por ser tan buena amiga.</p>
+</div>
+<div class="hint">Toca la pantalla para plantar más flores</div>
+
+<script>
+(() => {
+  // Optional name from the link: …/artifact/xyz#Mariana
+  try {
+    const n = decodeURIComponent(location.hash.slice(1)).replace(/[_-]+/g, " ").trim();
+    if (n) document.getElementById("title").textContent = "Para Perla Yami ";
+  } catch (e) {}
+
+  const cv = document.getElementById("garden");
+  const ctx = cv.getContext("2d");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let W, H, dpr;
+  const flowers = [], flies = [], stars = [];
+
+  function resize() {
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  const rnd = (a, b) => a + Math.random() * (b - a);
+
+  function makeFlower(x, delay, scale) {
+    const s = scale || rnd(.7, 1.15) * Math.min(1, W / 520 + .35);
+    return {
+      x, base: H + 4,
+      h: rnd(H * .22, H * .5) * Math.min(1.1, s + .15),
+      bend: rnd(-60, 60) * s,
+      size: rnd(26, 40) * s,
+      petals: Math.round(rnd(9, 14)),
+      phase: rnd(0, Math.PI * 2),
+      born: performance.now() + (delay || 0),
+      leafSide: Math.random() < .5 ? -1 : 1,
+      hue: rnd(-6, 6)
+    };
+  }
+
+  function seed() {
+    flowers.length = 0; flies.length = 0; stars.length = 0;
+    const count = Math.max(5, Math.min(11, Math.round(W / 70)));
+    for (let i = 0; i < count; i++) {
+      const x = (i + .5) / count * W + rnd(-20, 20);
+      flowers.push(makeFlower(x, 300 + i * 260 + rnd(0, 300)));
+    }
+    for (let i = 0; i < 26; i++) flies.push({x: rnd(0, W), y: rnd(H * .3, H), p: rnd(0, 7), sp: rnd(.2, .6)});
+    for (let i = 0; i < 70; i++) stars.push({x: rnd(0, W), y: rnd(0, H * .6), r: rnd(.3, 1.2), p: rnd(0, 7)});
+  }
+
+  const ease = t => 1 - Math.pow(1 - Math.min(Math.max(t, 0), 1), 3);
+
+  function stemPoint(f, t, sway) {
+    const x0 = f.x, y0 = f.base;
+    const cx = f.x + f.bend + sway * .5, cy = f.base - f.h * .55;
+    const x1 = f.x + f.bend * .6 + sway, y1 = f.base - f.h;
+    const u = 1 - t;
+    return [u*u*x0 + 2*u*t*cx + t*t*x1, u*u*y0 + 2*u*t*cy + t*t*y1];
+  }
+
+  function drawFlower(f, now) {
+    const age = (now - f.born) / 1000;
+    if (age < 0) return;
+    const grow = reduce ? 1 : ease(age / 2.2);
+    const bloom = reduce ? 1 : ease((age - 1.8) / 1.6);
+    const sway = Math.sin(now / 1400 + f.phase) * 10 * grow;
+
+    // stem
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#3f7a2c";
+    ctx.lineWidth = Math.max(2, f.size * .1);
+    ctx.beginPath();
+    const steps = 30;
+    for (let i = 0; i <= steps * grow; i++) {
+      const [x, y] = stemPoint(f, i / steps, sway);
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.stroke();
+
+    // leaf
+    const leafT = .45;
+    if (grow > leafT) {
+      const lg = ease((grow - leafT) / .4);
+      const [lx, ly] = stemPoint(f, leafT, sway);
+      ctx.save();
+      ctx.translate(lx, ly);
+      ctx.rotate(f.leafSide * .9 + sway * .01);
+      ctx.scale(lg, lg);
+      const L = f.size * 1.1;
+      ctx.fillStyle = "#4f9a36";
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(f.leafSide * L * .5, -L * .35, f.leafSide * L, 0);
+      ctx.quadraticCurveTo(f.leafSide * L * .5, L * .3, 0, 0);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    if (bloom <= 0) return;
+    const [hx, hy] = stemPoint(f, grow, sway);
+    const R = f.size * bloom;
+    ctx.save();
+    ctx.translate(hx, hy);
+    ctx.rotate(Math.sin(now / 2000 + f.phase) * .08 + now / 40000);
+
+    // glow
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, R * 2.4);
+    g.addColorStop(0, "rgba(255,210,63,.28)");
+    g.addColorStop(1, "rgba(255,210,63,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, 0, R * 2.4, 0, Math.PI * 2); ctx.fill();
+
+    // two rings of petals
+    for (let ring = 0; ring < 2; ring++) {
+      const n = f.petals, off = ring ? Math.PI / n : 0;
+      const len = R * (ring ? .82 : 1), wid = R * (ring ? .3 : .34);
+      for (let i = 0; i < n; i++) {
+        ctx.save();
+        ctx.rotate(off + i / n * Math.PI * 2);
+        const pg = ctx.createLinearGradient(0, 0, 0, -len);
+        pg.addColorStop(0, ring ? "hsl(" + (38 + f.hue) + ",100%,52%)" : "hsl(" + (40 + f.hue) + ",100%,48%)");
+        pg.addColorStop(1, ring ? "hsl(" + (50 + f.hue) + ",100%,68%)" : "hsl(" + (46 + f.hue) + ",100%,60%)");
+        ctx.fillStyle = pg;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(wid, -len * .3, wid * .8, -len * .9, 0, -len);
+        ctx.bezierCurveTo(-wid * .8, -len * .9, -wid, -len * .3, 0, 0);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+    // center
+    ctx.fillStyle = "#6b3d12";
+    ctx.beginPath(); ctx.arc(0, 0, R * .3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#a8641c";
+    for (let i = 0; i < 14; i++) {
+      const a = i * 2.4, r = Math.sqrt(i / 14) * R * .24;
+      ctx.beginPath(); ctx.arc(Math.cos(a) * r, Math.sin(a) * r, R * .035, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function frame(now) {
+    ctx.clearRect(0, 0, W, H);
+    for (const s of stars) {
+      ctx.fillStyle = "rgba(255,246,220," + (.35 + .35 * Math.sin(now / 900 + s.p)) + ")";
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
+    }
+    flowers.sort((a, b) => a.h - b.h);
+    for (const f of flowers) drawFlower(f, now);
+    for (const p of flies) {
+      if (!reduce) { p.x += Math.cos(now / 1700 + p.p) * p.sp; p.y += Math.sin(now / 1300 + p.p) * p.sp * .7; }
+      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+      if (p.y < H * .25) p.y = H; if (p.y > H) p.y = H * .25;
+      const a = .3 + .6 * Math.max(0, Math.sin(now / 700 + p.p * 3));
+      ctx.fillStyle = "rgba(255,226,120," + a + ")";
+      ctx.shadowColor = "rgba(255,210,63,.9)"; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 1.6, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+    requestAnimationFrame(frame);
+  }
+
+  addEventListener("pointerdown", e => {
+    const f = makeFlower(e.clientX, 0);
+    f.h = Math.max(60, H - e.clientY + rnd(-20, 20));
+    f.bend = rnd(-30, 30);
+    flowers.push(f);
+    if (flowers.length > 40) flowers.shift();
+  });
+
+  let t;
+  addEventListener("resize", () => { clearTimeout(t); t = setTimeout(() => { resize(); seed(); }, 200); });
+  resize(); seed(); requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
